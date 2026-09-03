@@ -1,21 +1,40 @@
 # Detection Engineering
 
-This section contains Microsoft security detections developed with KQL and documented using a consistent detection-engineering workflow.
+This section contains detection engineering projects built around specific attacker behaviors and Microsoft security telemetry.
 
-## Identity
+## Platforms
 
-- Brute Force and Password Spray Detection
-- Break-Glass Account Monitoring
+### Microsoft Defender
+- Defender for Endpoint
+- Defender for Office 365
+- Defender for Identity
+- Defender XDR
 
-## Endpoint
+### Microsoft Entra
+- Authentication
+- Account Security
+- Privileged Identity
 
-- Suspicious PowerShell Execution
-- Office Application Child Process Hunting
+### Microsoft Sentinel
+- Analytics Rules
+- Hunting Queries
 
-## Persistence
-
-- Suspicious Scheduled Task Persistence
+### Windows
+- Process Execution
+- Persistence
+- Defense Evasion
 
 ## Detection Standard
 
-Each detection should document the objective, threat scenario, telemetry requirements, KQL, MITRE ATT&CK mapping, severity, investigation guidance, false positives, tuning, and response actions.
+Each detection should document:
+
+- Objective and threat scenario
+- Data source and required telemetry
+- KQL detection logic
+- MITRE ATT&CK mapping
+- Severity and rationale
+- Investigation pivots
+- False-positive analysis
+- Tuning guidance
+- Validation / test cases
+- Response guidance

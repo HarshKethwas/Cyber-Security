@@ -1,5 +1,15 @@
 # Suspicious PowerShell Execution Detection
 
+| Field | Value |
+|---|---|
+| Status | Active research detection |
+| Platform | Microsoft Defender XDR |
+| Telemetry | DeviceProcessEvents |
+| Severity | Medium by default |
+| Confidence | Medium |
+| Primary ATT&CK | T1059.001 |
+| Version | 1.1 |
+
 ## Overview
 
 This KQL query is designed to detect potentially suspicious PowerShell activity that may indicate malicious behavior, post-exploitation activity, or abuse of legitimate system tools.
@@ -176,6 +186,32 @@ Assess whether the activity represents:
 - Security testing
 - Malware execution
 - Post-compromise attacker activity
+
+---
+
+## Validation Scenarios
+
+### Positive
+
+A user-launched PowerShell process contains encoded-command or download-cradle behavior.
+
+Expected result: **match**.
+
+### Negative
+
+A documented administrative PowerShell script executes without suspicious command-line indicators.
+
+Expected result: **no match**.
+
+### Edge case
+
+A legitimate management platform uses PowerShell with a keyword such as `-EncodedCommand`.
+
+Expected result: **match for analyst review**, then tune only with validated environmental context.
+
+## Known limitations
+
+Command-line indicators are not proof of maliciousness. Administrative tooling and security products may legitimately use the same PowerShell features.
 
 ---
 

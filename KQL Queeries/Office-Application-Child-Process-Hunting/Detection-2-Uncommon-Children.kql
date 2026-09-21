@@ -1,58 +1,50 @@
 let OfficeApps = dynamic([
-    "winword.exe",
-    "excel.exe",
-    "powerpnt.exe",
-    "outlook.exe",
-    "onenote.exe",
-    "msaccess.exe",
-    "publisher.exe"
+    "winword.exe", "excel.exe", "powerpnt.exe", "outlook.exe",
+    "onenote.exe", "msaccess.exe", "publisher.exe"
 ]);
+
 let CommonChildren = dynamic([
-    "msedge.exe",
-    "msedgewebview2.exe",
-    "chrome.exe",
-    "firefox.exe",
-    "teams.exe",
-    "ms-teams.exe",
-    "outlook.exe",
-    "splwow64.exe",
-    "protocolhandler.exe",
-    "filecoauth.exe",
-    "winword.exe",
-    "powerpnt.exe",
-    "excel.exe",
-    "onenote.exe",
-    "adobe.exe",
-    "acrobat.exe",
-    "microsoft.mashup.container.loader.exe"
+    "msedge.exe", "msedgewebview2.exe", "chrome.exe", "firefox.exe",
+    "teams.exe", "ms-teams.exe", "outlook.exe", "splwow64.exe",
+    "protocolhandler.exe", "filecoauth.exe", "winword.exe",
+    "powerpnt.exe", "excel.exe", "onenote.exe", "adobe.exe",
+    "acrobat.exe", "microsoft.mashup.container.loader.exe"
 ]);
+
 DeviceProcessEvents
-| where Timestamp > ago(14d)
+| where Timestamp >= ago(14d)
 | where InitiatingProcessFileName in~ (OfficeApps)
 | where FileName !in~ (CommonChildren)
-| extend LowerCommandLine = tolower(ProcessCommandLine)
-| extend RiskScore = 0
-| extend RiskScore = RiskScore + iff(LowerCommandLine contains "http://" or LowerCommandLine contains "https://" or LowerCommandLine contains "download" or LowerCommandLine contains "invoke-webrequest" or LowerCommandLine contains "webclient", 30, 0)
-| extend RiskScore = RiskScore + iff(LowerCommandLine contains "-enc" or LowerCommandLine contains "-encodedcommand" or LowerCommandLine contains "frombase64string" or LowerCommandLine contains "iex", 30, 0)
-| extend RiskScore = RiskScore + iff(LowerCommandLine contains "appdata" or LowerCommandLine contains "temp" or LowerCommandLine contains "public" or LowerCommandLine contains "downloads", 20, 0)
-| extend RiskScore = RiskScore + iff(FileName in~ ("mshta.exe", "rundll32.exe", "regsvr32.exe", "certutil.exe", "bitsadmin.exe"), 20, 0)
+| extend CommandLine = tolower(ProcessCommandLine)
+| extend RiskScore =
+      iff(CommandLine contains "http://"
+          or CommandLine contains "https://"
+          or CommandLine contains "download"
+          or CommandLine contains "invoke-webrequest"
+          or CommandLine contains "webclient", 30, 0)
+    + iff(CommandLine contains "-enc"
+          or CommandLine contains "-encodedcommand"
+          or CommandLine contains "frombase64string"
+          or CommandLine contains "invoke-expression", 30, 0)
+    + iff(CommandLine contains "\appdata\"
+          or CommandLine contains "\temp\"
+          or CommandLine contains "\public\"
+          or CommandLine contains "\downloads\", 20, 0)
+    + iff(FileName in~ ("mshta.exe", "rundll32.exe", "regsvr32.exe", "certutil.exe", "bitsadmin.exe"), 20, 0)
 | extend RiskLevel = case(
-    RiskScore >= 70, "High",
-    RiskScore >= 40, "Medium",
-    RiskScore > 0, "Low",
-    "Review"
+    RiskScore >= 70, "High-priority review",
+    RiskScore >= 40, "Medium-priority review",
+    "Low-priority review"
 )
-| summarize
-    FirstSeen = min(Timestamp),
-    LastSeen = max(Timestamp),
-    EventCount = count()
-    by DeviceName,
-       AccountName,
-       AccountSid,
-       InitiatingProcessFileName,
-       InitiatingProcessCommandLine,
-       FileName,
-       ProcessCommandLine,
-       RiskScore,
-       RiskLevel
-| order by RiskScore desc, EventCount desc, LastSeen desc
+| project
+    Timestamp,
+    DeviceName,
+    AccountName,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    FileName,
+    ProcessCommandLine,
+    RiskScore,
+    RiskLevel,
+    ReportId
+| order by RiskScore desc, Timestamp desc

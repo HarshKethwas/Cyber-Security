@@ -30,12 +30,14 @@ Examples include:
 
 ## MITRE ATT&CK Mapping
 
-| Technique ID | Technique |
-|-------------|-----------|
-| T1059.001 | PowerShell |
-| T1027 | Obfuscated Files or Information |
-| T1105 | Ingress Tool Transfer |
-| T1140 | Deobfuscate/Decode Files or Information |
+| Technique ID | Technique | When it applies |
+|-------------|-----------|-----------------|
+| **T1059.001** | PowerShell | All matching PowerShell executions |
+| **T1027** | Obfuscated Files or Information | Encoded/obfuscated command indicators |
+| **T1105** | Ingress Tool Transfer | Download activity is present |
+| **T1140** | Deobfuscate/Decode Files or Information | Decoding/deobfuscation behavior is present |
+
+ATT&CK mapping is conditional on the observed behavior; a generic PowerShell event should not automatically inherit every technique in the table.
 
 ---
 

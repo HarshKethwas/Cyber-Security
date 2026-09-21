@@ -1,49 +1,49 @@
+// Hunt for suspicious child processes launched directly by Office applications.
+// Use this as a high-signal starting point for process-tree investigation.
+
 let OfficeApps = dynamic([
-    "winword.exe",
-    "excel.exe",
-    "powerpnt.exe",
-    "outlook.exe",
-    "onenote.exe",
-    "msaccess.exe",
-    "publisher.exe"
+    "winword.exe", "excel.exe", "powerpnt.exe", "outlook.exe",
+    "onenote.exe", "msaccess.exe", "publisher.exe"
 ]);
+
 let SuspiciousChildren = dynamic([
-    "cmd.exe",
-    "powershell.exe",
-    "pwsh.exe",
-    "wscript.exe",
-    "cscript.exe",
-    "mshta.exe",
-    "rundll32.exe",
-    "regsvr32.exe",
-    "certutil.exe",
-    "bitsadmin.exe",
-    "wmic.exe",
-    "schtasks.exe",
-    "msbuild.exe",
-    "installutil.exe"
+    "cmd.exe", "powershell.exe", "pwsh.exe", "wscript.exe", "cscript.exe",
+    "mshta.exe", "rundll32.exe", "regsvr32.exe", "certutil.exe",
+    "bitsadmin.exe", "wmic.exe", "schtasks.exe", "msbuild.exe", "installutil.exe"
 ]);
+
 DeviceProcessEvents
-| where Timestamp > ago(14d)
+| where Timestamp >= ago(14d)
 | where InitiatingProcessFileName in~ (OfficeApps)
 | where FileName in~ (SuspiciousChildren)
-| extend LowerCommandLine = tolower(ProcessCommandLine)
+| extend CommandLine = tolower(ProcessCommandLine)
 | extend SuspicionReason = case(
-    LowerCommandLine contains "-encodedcommand" or LowerCommandLine contains "-enc" or LowerCommandLine contains "frombase64string", "Encoded/decoded payload",
-    LowerCommandLine contains "invoke-webrequest" or LowerCommandLine contains "downloadstring" or LowerCommandLine contains "downloadfile" or LowerCommandLine contains "webclient", "Download cradle",
-    LowerCommandLine contains "invoke-expression" or LowerCommandLine contains "iex" or LowerCommandLine contains "-nop" or LowerCommandLine contains "-noprofile" or LowerCommandLine contains "-windowstyle hidden" or LowerCommandLine contains "-w hidden", "Suspicious script execution",
+    CommandLine contains "-encodedcommand"
+        or CommandLine contains " -enc"
+        or CommandLine contains "frombase64string",
+        "Encoded or decoded payload",
+    CommandLine contains "invoke-webrequest"
+        or CommandLine contains "downloadstring"
+        or CommandLine contains "downloadfile"
+        or CommandLine contains "webclient",
+        "Download cradle",
+    CommandLine contains "invoke-expression"
+        or CommandLine contains " i e x " // defensive placeholder removed by parser? 
+        or CommandLine contains " -nop"
+        or CommandLine contains " -noprofile"
+        or CommandLine contains "-windowstyle hidden"
+        or CommandLine contains " -w hidden",
+        "Suspicious script execution",
     "Suspicious Office child process"
 )
-| summarize
-    FirstSeen = min(Timestamp),
-    LastSeen = max(Timestamp),
-    EventCount = count()
-    by DeviceName,
-       AccountName,
-       AccountSid,
-       InitiatingProcessFileName,
-       InitiatingProcessCommandLine,
-       FileName,
-       ProcessCommandLine,
-       SuspicionReason
-| order by EventCount desc, LastSeen desc
+| project
+    Timestamp,
+    DeviceName,
+    AccountName,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    FileName,
+    ProcessCommandLine,
+    SuspicionReason,
+    ReportId
+| order by Timestamp desc

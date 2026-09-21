@@ -309,42 +309,28 @@ MITRE mapping helps connect individual detections to broader attacker behavior a
 
 # 📁 Repository Structure
 
+The repository currently contains a mix of established projects and evolving category folders.
+
 ```text
 Cyber-Security/
-│
 ├── detections/
-│   ├── identity/
-│   ├── endpoint/
-│   ├── persistence/
-│   ├── defense-evasion/
-│   └── cloud/
-│
-├── threat-hunting/
-│   ├── powershell/
-│   ├── credential-access/
-│   ├── persistence/
-│   └── lateral-movement/
-│
+│   ├── microsoft-defender/
+│   ├── microsoft-entra/
+│   ├── sentinel/
+│   └── windows/
+├── KQL Queeries/
+│   ├── Brute-Force-and-Password-Spray-Detection/
+│   ├── Office-Application-Child-Process-Hunting/
+│   ├── Suspicious-Scheduled-Task-Persistence/
+│   └── Suspicious_PowerShell-Execution/
+├── Identity-Security-Lab/
 ├── incident-response/
-│   ├── password-spray/
-│   ├── phishing/
-│   └── persistence/
-│
-├── malware-analysis/
-│   ├── static-analysis/
-│   └── dynamic-analysis/
-│
 ├── labs/
-│   ├── wazuh/
-│   ├── sysmon/
-│   └── microsoft-security/
-│
-├── documentation/
-│
-└── assets/
+├── Malware-Analysis/
+└── threat-hunting/
 ```
 
-> Repository structure is continuously evolving as new projects and investigations are added.
+> **Migration note:** the `KQL Queeries/` projects are the current working detection implementations. The `detections/` hierarchy is being developed as the canonical long-term organization.
 
 ---
 

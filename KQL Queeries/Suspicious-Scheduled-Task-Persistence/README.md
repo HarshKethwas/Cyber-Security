@@ -177,15 +177,15 @@ C:\Windows\Temp\
 
 ## MITRE ATT&CK Mapping
 
-| Technique ID | Technique |
-|-------------|------------|
-| T1053.005 | Scheduled Task/Job: Scheduled Task |
-| T1059 | Command and Scripting Interpreter |
-| T1059.001 | PowerShell |
-| T1027 | Obfuscated Files or Information |
-| T1547 | Boot or Logon Autostart Execution |
-| T1543 | Create or Modify System Process |
-| T1105 | Ingress Tool Transfer |
+| Technique ID | Technique | Evidence in this detection |
+|-------------|-----------|----------------------------|
+| **T1053.005** | Scheduled Task/Job: Scheduled Task | `schtasks /create` or `schtasks /change` |
+| **T1059.001** | PowerShell | Encoded/obfuscated PowerShell indicators when the process is PowerShell |
+| **T1027** | Obfuscated Files or Information | Encoded-command / Base64-related indicators |
+
+The query should **not** automatically map every result to all three techniques. The final ATT&CK mapping depends on which condition actually matched.
+
+The previous broad mappings for Valid Accounts, Boot/Logon Autostart, Create/Modify System Process, and Ingress Tool Transfer were removed because this query does not directly establish those behaviors.
 
 ---
 

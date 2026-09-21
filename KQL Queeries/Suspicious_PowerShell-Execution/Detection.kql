@@ -1,14 +1,50 @@
+// Hunt for PowerShell executions containing common suspicious behaviors.
+// This is a triage detector; command-line indicators require context.
+
 DeviceProcessEvents
-| where FileName in~ ("powershell.exe","pwsh.exe","powershell_ise.exe")
+| where Timestamp >= ago(14d)
+| where FileName in~ ("powershell.exe", "pwsh.exe", "powershell_ise.exe")
 | extend CmdLine = tolower(ProcessCommandLine)
-| where CmdLine has_any ("-enc","-encodedcommand","iex","-executionpolicy","invoke-expression","-ep","downloadstring","downloadfile","invoke-webrequest","iwr","wget","curl","frombase64string","hidden","-w hidden","-nop","-noprofile")
-| where AccountSid !in ("S-1-5-18","S-1-5-19","S-1-5-20","S-1-5-15")
-// Optional environment specific tuning:
-// |where AccountName !in~ ("known admin accounts","known service account")
-// |where ProcessCommandLine !contains "Known begin tool name" 
-| summarize 
-      FirstSeen = min(Timestamp),
-      LastSeen = max(Timestamp),
-      EventCount = count()
-      by DeviceName, AccountName,AccountSid,FileName,ProcessCommandLine,InitiatingProcessFileName, InitiatingProcessCommandLine
-| sort by EventCount desc, LastSeen desc
+| extend SuspiciousIndicator = case(
+    CmdLine contains "-encodedcommand" or CmdLine contains " -enc",
+        "Encoded PowerShell",
+    CmdLine contains "downloadstring"
+        or CmdLine contains "downloadfile"
+        or CmdLine contains "invoke-webrequest"
+        or CmdLine contains "iwr",
+        "Download behavior",
+    CmdLine contains "frombase64string"
+        or CmdLine contains "invoke-expression"
+        or CmdLine contains " iex ",
+        "Decode/execute behavior",
+    CmdLine contains "-executionpolicy"
+        or CmdLine contains " -ep",
+        "Execution policy modification",
+    CmdLine contains "-windowstyle hidden"
+        or CmdLine contains " -w hidden"
+        or CmdLine contains " -nop"
+        or CmdLine contains " -noprofile",
+        "Stealth-oriented execution",
+    "Other suspicious PowerShell"
+)
+| where not(
+    CmdLine !contains "-"
+    and CmdLine !contains "download"
+    and CmdLine !contains "invoke"
+    and CmdLine !contains "encoded"
+)
+| where AccountSid !in (
+    "S-1-5-18", "S-1-5-19", "S-1-5-20", "S-1-5-15"
+)
+| project
+    Timestamp,
+    DeviceName,
+    AccountName,
+    AccountSid,
+    FileName,
+    ProcessCommandLine,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    SuspiciousIndicator,
+    ReportId
+| order by Timestamp desc

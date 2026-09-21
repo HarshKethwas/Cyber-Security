@@ -1,10 +1,33 @@
+// Purpose:
+// Identify password-spray-like activity by looking for one source IP
+// generating failures across multiple distinct user accounts.
+// Tune thresholds for the target tenant and authentication population.
+
+let Lookback = 24h;
+let MinFailedAttempts = 10;
+let MinDistinctUsers = 5;
+let MaxAttemptsPerUser = 5;
+
 EntraIdSignInEvents
-| where Timestamp > ago(1d)
+| where Timestamp >= ago(Lookback)
 | where LogonType == "interactive"
 | where ErrorCode != 0
+| where isnotempty(IPAddress)
+| where isnotempty(AccountUpn)
 | summarize
     FailedAttempts = count(),
-    DistinctUsers = dcount(AccountUpn)
+    DistinctUsers = dcount(AccountUpn),
+    Users = make_set(AccountUpn, 50)
     by IPAddress, bin(Timestamp, 1h)
-| where FailedAttempts > 5
-| order by FailedAttempts desc
+| extend AttemptsPerUser = todouble(FailedAttempts) / DistinctUsers
+| where FailedAttempts >= MinFailedAttempts
+| where DistinctUsers >= MinDistinctUsers
+| where AttemptsPerUser <= MaxAttemptsPerUser
+| project
+    Timestamp,
+    IPAddress,
+    FailedAttempts,
+    DistinctUsers,
+    AttemptsPerUser,
+    Users
+| order by DistinctUsers desc, FailedAttempts desc

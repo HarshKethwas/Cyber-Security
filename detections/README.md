@@ -1,40 +1,37 @@
-# Detection Engineering
+# Detection Engineering Library
 
-This section contains detection engineering projects built around specific attacker behaviors and Microsoft security telemetry.
+This repository uses a single canonical detection structure.
 
-## Platforms
+Each detection should be treated as a deployable SOC artifact rather than only a KQL snippet.
 
-### Microsoft Defender
-- Defender for Endpoint
-- Defender for Office 365
-- Defender for Identity
-- Defender XDR
+## Detection standard
 
-### Microsoft Entra
-- Authentication
-- Account Security
-- Privileged Identity
+Every production-shaped detection should document:
 
-### Microsoft Sentinel
-- Analytics Rules
-- Hunting Queries
+- **Objective** — the attacker behavior or security problem
+- **Threat scenario** — why the behavior matters
+- **Data source / telemetry** — required tables and fields
+- **Detection logic** — exact KQL or other query
+- **MITRE ATT&CK** — only techniques supported by the observed behavior
+- **Severity** — operational impact and escalation conditions
+- **Confidence** — how strongly the logic indicates malicious activity
+- **False positives** — known legitimate causes
+- **Tuning** — environment-specific exclusions and thresholds
+- **Validation** — expected positive and negative test cases
+- **Investigation pivots** — what the analyst checks next
+- **Response** — recommended containment and remediation actions
 
-### Windows
-- Process Execution
-- Persistence
-- Defense Evasion
+## Current canonical projects
 
-## Detection Standard
+| Detection | Platform | Primary telemetry | Focus |
+|---|---|---|---|
+| [Entra Password Spray](../KQL%20Queeries/Brute-Force-and-Password-Spray-Detection/) | Microsoft Defender XDR | `EntraIdSignInEvents` | Identity / Credential Access |
+| [Office Child Process](../KQL%20Queeries/Office-Application-Child-Process-Hunting/) | Microsoft Defender XDR | `DeviceProcessEvents` | Initial Access / Execution |
+| [Scheduled Task Persistence](../KQL%20Queeries/Suspicious-Scheduled-Task-Persistence/) | Microsoft Defender XDR | `DeviceProcessEvents` | Persistence |
+| [Suspicious PowerShell](../KQL%20Queeries/Suspicious_PowerShell-Execution/) | Microsoft Defender XDR | `DeviceProcessEvents` | Execution / Defense Evasion |
 
-Each detection should document:
+The existing legacy query folders remain available for compatibility while they are migrated into the canonical structure.
 
-- Objective and threat scenario
-- Data source and required telemetry
-- KQL detection logic
-- MITRE ATT&CK mapping
-- Severity and rationale
-- Investigation pivots
-- False-positive analysis
-- Tuning guidance
-- Validation / test cases
-- Response guidance
+## Quality bar
+
+A query is not considered complete because it returns suspicious rows. A portfolio-quality detection should show how the result becomes an analyst decision: why it fired, how to validate it, how to reduce noise, and what to do next.

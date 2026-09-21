@@ -28,7 +28,7 @@ DeviceProcessEvents
         or CommandLine contains "webclient",
         "Download cradle",
     CommandLine contains "invoke-expression"
-        or CommandLine contains " i e x " // defensive placeholder removed by parser? 
+        or CommandLine contains " i e x "
         or CommandLine contains " -nop"
         or CommandLine contains " -noprofile"
         or CommandLine contains "-windowstyle hidden"

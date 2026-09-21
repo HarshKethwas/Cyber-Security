@@ -1,4 +1,14 @@
-# Suspicious Scheduled Task Persistence Detection
+# Scheduled Task Persistence Detection
+
+| Field | Value |
+|---|---|
+| Status | Active research detection |
+| Platform | Microsoft Defender XDR |
+| Telemetry | DeviceProcessEvents |
+| Severity | Medium by default; escalate with corroborating evidence |
+| Confidence | Medium |
+| Primary ATT&CK | T1053.005 |
+| Version | 1.1 |
 
 ## Overview
 
@@ -301,6 +311,26 @@ The following activities may generate legitimate alerts:
 - Security testing activities
 
 Environment-specific tuning is recommended.
+
+---
+
+## Validation Scenarios
+
+### Positive
+
+`schtasks.exe /create` creates a task that launches an encoded PowerShell command from a user-writable path.
+
+Expected result: **high-priority review**.
+
+### Negative
+
+A known software deployment account creates a scheduled task from a standard installation path using a documented deployment workflow.
+
+Expected result: **review/tune**, not automatic malicious verdict.
+
+## Known limitations
+
+`DeviceProcessEvents` shows process execution but does not directly expose the complete scheduled-task object state in every environment. Validate the task itself with the available endpoint, Windows event, or management telemetry before concluding persistence.
 
 ---
 

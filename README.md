@@ -58,6 +58,31 @@ Each project is designed to demonstrate how a security analyst approaches a real
 
 ---
 
+# ⭐ Recruiter Quick Start
+
+This portfolio is organized around **SOC detection engineering**, with an emphasis on Microsoft Defender XDR, Microsoft Entra ID, KQL, threat hunting, and investigation workflows.
+
+### Start here
+
+| Project | What it demonstrates |
+|---|---|
+| [Entra Password Spray](KQL%20Queries/Brute-Force-and-Password-Spray-Detection/) | Behavioral identity detection, threshold tuning, investigation pivots |
+| [Office Child Process Hunting](KQL%20Queries/Office-Application-Child-Process-Hunting/) | Process-tree analytics, LOLBin hunting, risk prioritization |
+| [Scheduled Task Persistence](KQL%20Queries/Suspicious-Scheduled-Task-Persistence/) | Persistence analytics, multi-signal scoring, ATT&CK mapping |
+| [Suspicious PowerShell](KQL%20Queries/Suspicious_PowerShell-Execution/) | Command-line analytics, obfuscation/download hunting |
+
+### What this repository demonstrates
+
+**Detection engineering:** KQL logic, thresholds, behavioral analytics, tuning  
+**SOC operations:** triage, scoping, investigation pivots, response guidance  
+**Threat hunting:** anomaly-oriented queries and process-chain analysis  
+**Frameworks:** MITRE ATT&CK mapping tied to observed behavior  
+**Lab work:** Windows/Sysmon/Wazuh security telemetry
+
+[Detection catalog](detections/detection-catalog.md) · [Detection standard](detections/DETECTION-STANDARD.md)
+
+---
+
 # 🔎 Detection Engineering
 
 The detection engineering section contains security detections built primarily with **Kusto Query Language (KQL)** and Microsoft security telemetry.
@@ -318,7 +343,7 @@ Cyber-Security/
 │   ├── microsoft-entra/
 │   ├── sentinel/
 │   └── windows/
-├── KQL Queeries/
+├── KQL Queries/
 │   ├── Brute-Force-and-Password-Spray-Detection/
 │   ├── Office-Application-Child-Process-Hunting/
 │   ├── Suspicious-Scheduled-Task-Persistence/
@@ -330,7 +355,7 @@ Cyber-Security/
 └── threat-hunting/
 ```
 
-> **Migration note:** the `KQL Queeries/` projects are the current working detection implementations. The `detections/` hierarchy is being developed as the canonical long-term organization.
+> **Migration note:** the `KQL Queries/` projects are the current working detection implementations. The `detections/` hierarchy is being developed as the canonical long-term organization.
 
 ---
 

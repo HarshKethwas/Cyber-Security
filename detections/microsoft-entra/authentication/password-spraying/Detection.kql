@@ -1,0 +1,50 @@
+// ENTRA-AUTH-002
+// Name: Possible Password Spraying From a Single Source IP
+// Platform: Microsoft Defender XDR
+// Table: EntraIdSignInEvents
+//
+// Logic: Detect a source IP producing failed interactive sign-ins
+// against multiple distinct accounts within a defined window.
+// Tune thresholds for the target environment.
+
+let Lookback = 1d;
+let Window = 1h;
+let MinDistinctUsers = 5;
+let MinFailedAttempts = 10;
+
+EntraIdSignInEvents
+| where Timestamp > ago(Lookback)
+| where LogonType == "interactive"
+| where ErrorCode != 0
+| where isnotempty(AccountUpn)
+| where isnotempty(IPAddress)
+| summarize
+    FailedAttempts = count(),
+    DistinctUsers = dcount(AccountUpn),
+    TargetedUsers = make_set(AccountUpn, 25),
+    FirstSeen = min(Timestamp),
+    LastSeen = max(Timestamp),
+    DistinctApplications = dcount(Application),
+    Applications = make_set(Application, 10),
+    UserAgents = make_set(UserAgent, 10)
+    by
+    IPAddress,
+    TimeBucket = bin(Timestamp, Window)
+| where DistinctUsers >= MinDistinctUsers
+| where FailedAttempts >= MinFailedAttempts
+| extend
+    Detection = "Possible Password Spraying",
+    MITRETechnique = "T1110.003"
+| project
+    FirstSeen,
+    LastSeen,
+    IPAddress,
+    FailedAttempts,
+    DistinctUsers,
+    TargetedUsers,
+    DistinctApplications,
+    Applications,
+    UserAgents,
+    Detection,
+    MITRETechnique
+| order by DistinctUsers desc, FailedAttempts desc, LastSeen desc

@@ -1,0 +1,15 @@
+detection:
+  id: ENTRA-AUTH-002
+  name: Password Spraying From a Single Source IP
+  platform: Microsoft Defender XDR
+  table: EntraIdSignInEvents
+  type: behavioral-detection
+  window: 1h
+  threshold:
+    distinct_users: 5
+    failed_attempts: 10
+  mitre:
+    - T1110.003
+  default_severity: Medium
+  tuning: Environment-specific
+  validation_required: true

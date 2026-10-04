@@ -1,0 +1,14 @@
+detection:
+  id: ENTRA-AUTH-001
+  name: Password Guessing / Brute Force Against a Single Account
+  platform: Microsoft Defender XDR
+  table: EntraIdSignInEvents
+  type: behavioral-detection
+  window: 15m
+  threshold:
+    failed_attempts: 8
+  mitre:
+    - T1110.001
+  default_severity: Medium
+  tuning: Environment-specific
+  validation_required: true

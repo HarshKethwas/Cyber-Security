@@ -1,0 +1,48 @@
+// ENTRA-AUTH-001
+// Name: Possible Password Guessing / Brute Force Against a Single Account
+// Platform: Microsoft Defender XDR
+// Table: EntraIdSignInEvents
+//
+// Logic: Detect repeated failed interactive sign-ins against the same account
+// from the same source IP within a short time window.
+// Tune thresholds for the target environment.
+
+let Lookback = 1d;
+let Window = 15m;
+let MinFailedAttempts = 8;
+
+EntraIdSignInEvents
+| where Timestamp > ago(Lookback)
+| where LogonType == "interactive"
+| where ErrorCode != 0
+| where isnotempty(AccountUpn)
+| where isnotempty(IPAddress)
+| summarize
+    FailedAttempts = count(),
+    FirstSeen = min(Timestamp),
+    LastSeen = max(Timestamp),
+    DistinctApplications = dcount(Application),
+    Applications = make_set(Application, 10),
+    UserAgents = make_set(UserAgent, 5)
+    by
+    AccountDisplayName,
+    AccountUpn,
+    IPAddress,
+    TimeBucket = bin(Timestamp, Window)
+| where FailedAttempts >= MinFailedAttempts
+| extend
+    Detection = "Possible Password Guessing / Brute Force",
+    MITRETechnique = "T1110.001"
+| project
+    FirstSeen,
+    LastSeen,
+    AccountDisplayName,
+    AccountUpn,
+    IPAddress,
+    FailedAttempts,
+    DistinctApplications,
+    Applications,
+    UserAgents,
+    Detection,
+    MITRETechnique
+| order by FailedAttempts desc, LastSeen desc

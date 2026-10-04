@@ -1,9 +1,25 @@
-# Microsoft Entra Detections
+# Microsoft Entra Detection Engineering
 
-Identity and access detections focused on Microsoft Entra ID telemetry.
+Detection projects focused on Microsoft Entra identity telemetry and authentication behavior.
 
-## Areas
+## Authentication
 
-- Authentication
-- Account security
-- Privileged identity
+- [Password Guessing / Brute Force](authentication/password-guessing/)
+- [Password Spraying](authentication/password-spraying/)
+
+## Detection philosophy
+
+Authentication detections should distinguish between different attacker behaviors rather than grouping all failed sign-ins into one broad query.
+
+Each detection should document:
+
+- Behavioral objective
+- Required telemetry
+- Thresholds and time windows
+- KQL implementation
+- MITRE ATT&CK mapping
+- Investigation pivots
+- False-positive considerations
+- Tuning guidance
+- Validation test cases
+- Response considerations

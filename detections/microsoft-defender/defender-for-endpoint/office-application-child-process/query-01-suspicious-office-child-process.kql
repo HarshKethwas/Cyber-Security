@@ -1,0 +1,89 @@
+// MDE-OFFICE-001
+// Purpose: Detect high-risk child processes launched directly by Microsoft Office applications.
+// Data source: Microsoft Defender for Endpoint - DeviceProcessEvents
+// Review: Tune the Office parent list and LOLBin list for your environment.
+
+let Lookback = 14d;
+let OfficeApps = dynamic([
+    "winword.exe",
+    "excel.exe",
+    "powerpnt.exe",
+    "outlook.exe",
+    "onenote.exe",
+    "msaccess.exe",
+    "publisher.exe"
+]);
+let SuspiciousChildren = dynamic([
+    "cmd.exe",
+    "powershell.exe",
+    "pwsh.exe",
+    "wscript.exe",
+    "cscript.exe",
+    "mshta.exe",
+    "rundll32.exe",
+    "regsvr32.exe",
+    "certutil.exe",
+    "bitsadmin.exe",
+    "wmic.exe",
+    "schtasks.exe",
+    "msbuild.exe",
+    "installutil.exe"
+]);
+
+DeviceProcessEvents
+| where Timestamp > ago(Lookback)
+| where InitiatingProcessFileName in~ (OfficeApps)
+| where FileName in~ (SuspiciousChildren)
+| extend
+    LowerCommandLine = tolower(tostring(ProcessCommandLine)),
+    LowerParentCommandLine = tolower(tostring(InitiatingProcessCommandLine))
+| extend DetectionReason = case(
+    FileName in~ ("powershell.exe", "pwsh.exe") and (
+        LowerCommandLine contains "encodedcommand" or
+        LowerCommandLine contains " -enc " or
+        LowerCommandLine startswith "-enc " or
+        LowerCommandLine contains "frombase64string"
+    ), "Encoded or decoded PowerShell content",
+    FileName in~ ("powershell.exe", "pwsh.exe") and (
+        LowerCommandLine contains "invoke-webrequest" or
+        LowerCommandLine contains "downloadstring" or
+        LowerCommandLine contains "downloadfile" or
+        LowerCommandLine contains "webclient" or
+        LowerCommandLine contains "http://"
+        or LowerCommandLine contains "https://"
+    ), "PowerShell download or network activity",
+    FileName in~ ("powershell.exe", "pwsh.exe") and (
+        LowerCommandLine contains " -nop" or
+        LowerCommandLine contains " -noprofile" or
+        LowerCommandLine contains "-windowstyle hidden" or
+        LowerCommandLine contains "-w hidden" or
+        LowerCommandLine contains " iex " or
+        LowerCommandLine startswith "iex "
+        or LowerCommandLine contains "iex("
+    ), "Suspicious PowerShell execution parameters",
+    FileName in~ ("mshta.exe", "rundll32.exe", "regsvr32.exe"), "Signed binary proxy execution candidate",
+    FileName in~ ("certutil.exe", "bitsadmin.exe"), "Potential file transfer utility abuse",
+    FileName =~ "schtasks.exe", "Potential scheduled-task persistence activity",
+    "Office spawned a monitored suspicious child process"
+)
+| project
+    Timestamp,
+    DeviceId,
+    DeviceName,
+    ReportId,
+    InitiatingProcessUniqueId,
+    InitiatingProcessFileName,
+    InitiatingProcessFolderPath,
+    InitiatingProcessCommandLine,
+    InitiatingProcessAccountUpn,
+    InitiatingProcessSignerType,
+    InitiatingProcessSignatureStatus,
+    FileName,
+    FolderPath,
+    ProcessUniqueId,
+    ProcessCommandLine,
+    SHA1,
+    InitiatingProcessSHA1,
+    ProcessIntegrityLevel,
+    DetectionReason
+| order by Timestamp desc

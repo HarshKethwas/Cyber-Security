@@ -1,0 +1,130 @@
+// MDE-OFFICE-002
+// Purpose: Hunt for Office child-process relationships that are new or unusually rare in a recent window.
+// Data source: Microsoft Defender for Endpoint - DeviceProcessEvents
+// The score is a triage priority, not a definitive severity rating.
+
+let RecentWindow = 1d;
+let BaselineStart = 14d;
+let OfficeApps = dynamic([
+    "winword.exe",
+    "excel.exe",
+    "powerpnt.exe",
+    "outlook.exe",
+    "onenote.exe",
+    "msaccess.exe",
+    "publisher.exe"
+]);
+let CommonChildren = dynamic([
+    "msedge.exe",
+    "msedgewebview2.exe",
+    "chrome.exe",
+    "firefox.exe",
+    "teams.exe",
+    "ms-teams.exe",
+    "outlook.exe",
+    "splwow64.exe",
+    "protocolhandler.exe",
+    "filecoauth.exe",
+    "winword.exe",
+    "powerpnt.exe",
+    "excel.exe",
+    "onenote.exe",
+    "adobe.exe",
+    "acrobat.exe",
+    "microsoft.mashup.container.loader.exe"
+]);
+
+let Baseline = materialize(
+    DeviceProcessEvents
+    | where Timestamp between (ago(BaselineStart) .. ago(RecentWindow))
+    | where InitiatingProcessFileName in~ (OfficeApps)
+    | where FileName !in~ (CommonChildren)
+    | where isnotempty(FileName)
+    | summarize
+        BaselineEventCount = count(),
+        BaselineDeviceCount = dcount(DeviceId)
+      by
+        ParentProcess = InitiatingProcessFileName,
+        ChildProcess = FileName
+);
+
+DeviceProcessEvents
+| where Timestamp > ago(RecentWindow)
+| where InitiatingProcessFileName in~ (OfficeApps)
+| where FileName !in~ (CommonChildren)
+| where isnotempty(FileName)
+| join kind=leftouter Baseline
+    on $left.InitiatingProcessFileName == $right.ParentProcess,
+       $left.FileName == $right.ChildProcess
+| extend
+    BaselineEventCount = coalesce(BaselineEventCount, 0),
+    BaselineDeviceCount = coalesce(BaselineDeviceCount, 0)
+| extend
+    LowerCommandLine = tolower(tostring(ProcessCommandLine)),
+    LowerFolderPath = tolower(tostring(FolderPath))
+| extend
+    IsPreviouslyUnseen = BaselineEventCount == 0,
+    IsLowPrevalence = BaselineDeviceCount <= 2,
+    HasNetworkIndicator =
+        LowerCommandLine contains "http://" or
+        LowerCommandLine contains "https://" or
+        LowerCommandLine contains "download" or
+        LowerCommandLine contains "invoke-webrequest" or
+        LowerCommandLine contains "webclient",
+    HasObfuscationIndicator =
+        LowerCommandLine contains "encodedcommand" or
+        LowerCommandLine contains "frombase64string" or
+        LowerCommandLine contains " -enc " or
+        LowerCommandLine contains " iex " or
+        LowerCommandLine startswith "iex ",
+    IsUserWritablePath =
+        LowerFolderPath contains "\appdata\" or
+        LowerFolderPath contains "\temp\" or
+        LowerFolderPath contains "\downloads\" or
+        LowerFolderPath contains "\public\",
+    IsHighRiskLolbin =
+        FileName in~ (
+            "mshta.exe",
+            "rundll32.exe",
+            "regsvr32.exe",
+            "certutil.exe",
+            "bitsadmin.exe",
+            "wmic.exe"
+        )
+| extend HuntPriorityScore =
+    iff(IsPreviouslyUnseen, 40, 0) +
+    iff(IsLowPrevalence, 15, 0) +
+    iff(HasNetworkIndicator, 20, 0) +
+    iff(HasObfuscationIndicator, 25, 0) +
+    iff(IsUserWritablePath, 15, 0) +
+    iff(IsHighRiskLolbin, 20, 0)
+| extend HuntPriority = case(
+    HuntPriorityScore >= 70, "High",
+    HuntPriorityScore >= 40, "Medium",
+    "Low"
+)
+| project
+    Timestamp,
+    DeviceId,
+    DeviceName,
+    ReportId,
+    InitiatingProcessUniqueId,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    InitiatingProcessAccountUpn,
+    FileName,
+    FolderPath,
+    ProcessUniqueId,
+    ProcessCommandLine,
+    SHA1,
+    BaselineEventCount,
+    BaselineDeviceCount,
+    IsPreviouslyUnseen,
+    IsLowPrevalence,
+    HasNetworkIndicator,
+    HasObfuscationIndicator,
+    IsUserWritablePath,
+    IsHighRiskLolbin,
+    HuntPriorityScore,
+    HuntPriority
+| order by HuntPriorityScore desc, Timestamp desc

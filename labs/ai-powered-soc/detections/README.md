@@ -51,6 +51,19 @@ The supplied Wazuh JSON confirms these decoded field names for Sysmon Event ID 1
 
 In the indexed alert JSON, these are nested under `data.win...`. In Wazuh rule XML, the field names are referenced as `win.eventdata.image`, `win.eventdata.commandLine`, and so on (without the JSON wrapper `data.` prefix). This field naming is also demonstrated by Wazuh rule 92057, which matched the submitted event.
 
+## False-positive case study — Rule 92213
+
+A Wazuh rule 92213 alert (level 15) was inspected on 2026-11-22. It was caused by Windows PowerShell creating:
+
+`%LOCALAPPDATA%\Temp\__PSScriptPolicyTest_[random].ps1`
+
+The supplied Sysmon Event ID 11 event identifies `powershell.exe` as the creator. This filename pattern is associated with PowerShell script execution-policy test behavior, so the specific lab event is assessed as likely benign. Rule 92213 matches broad Temp-path plus script/executable-extension conditions; it does not establish that a file was transferred from an external source. Its T1105 mapping should therefore not be treated as proof of ingress transfer in this event.
+
+- [Full sanitized analysis and proposed tuning](../evidence/2026-11-22-rule-92213-false-positive.md)
+- [Draft narrow level-0 exception](./wazuh/rules/noise_reduction_draft.xml)
+
+The exception is **draft only**. Validate the parent/child match with `wazuh-logtest` before deployment. Do not suppress all PowerShell files in Temp or disable rule 92213 globally.
+
 ## Rule implementation
 
 The initial custom XML is committed at:

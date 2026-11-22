@@ -66,7 +66,7 @@ If your Wazuh version or rule hierarchy does not permit the child rule to overri
 
 **Disposition for this lab event:** Likely benign / false positive from a broad built-in rule.
 
-**Recommended action:** Add a narrow, test-backed exception for this exact filename pattern. Do not disable rule 92213 globally and do not suppress all `.ps1` files under Temp.
+**Recommended action:** Consider a narrow, test-backed child rule that reduces this specific PowerShell policy-test pattern to low severity while retaining an alert. Do not disable rule 92213 globally or suppress all `.ps1` files under Temp.
 
 ## References
 

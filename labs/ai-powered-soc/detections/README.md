@@ -1,175 +1,182 @@
-# Detection Engineering — Baseline v0.1
+# Detection Engineering — Baseline v0.2
 
-This directory tracks the first five custom detections planned for the AI-Powered SOC Lab. The detections are designed for Wazuh using Windows Sysmon process-creation telemetry.
+This directory tracks custom detections for the AI-Powered SOC Lab, built around Windows Sysmon process-creation telemetry.
 
-> **Status:** Baseline defined; implementation and validation pending  
+> **Status:** Initial telemetry confirmed; first custom rules drafted, not yet deployed  
 > **Data source:** Windows Sysmon — Event ID 1 (Process Create)  
-> **Rule IDs:** Reserved in the 100500–100530 range
+> **Custom rule IDs:** 100500–100510  
+> **Rule file:** [soc_windows_baseline.xml](./wazuh/rules/soc_windows_baseline.xml)
 
 ## Detection catalogue
 
-| Detection ID | Name | Planned Wazuh rule ID | ATT&CK mapping | Initial status |
+| Detection ID | Name | Custom rule ID | ATT&CK mapping | Status |
 |---|---|---:|---|---|
-| D001 | Suspicious PowerShell execution | 100500 | T1059.001 | Planned |
-| D002 | Encoded PowerShell commands | 100501 | T1059.001, T1027 | Planned |
-| D003 | Account and domain discovery | 100510 | T1087, T1069 | Planned |
-| D004 | Suspicious LOLBin usage | 100520 | T1218, T1105, T1140 | Planned |
-| D005 | Suspicious parent-child process relationships | 100530 | T1059.001, T1204.002 | Planned |
+| D001 | Suspicious PowerShell execution | 100500 | T1059.001 | Drafted; testing pending |
+| D002 | Encoded PowerShell from non-PowerShell parent | 100501 | T1059.001, T1027 | Drafted; testing pending |
+| D003 | `whoami.exe /all` identity discovery | 100510 | T1033 | Drafted; testing pending |
+| D004 | Suspicious LOLBin usage | 100520 | To be implemented | Planned |
+| D005 | Suspicious parent-child process relationships | 100530 | To be implemented | Planned |
 
-ATT&CK mappings are starting hypotheses and will be refined to the observed behavior and exact sub-technique during implementation.
+## Confirmed lab telemetry
 
-## Telemetry fields to validate
+### Encoded PowerShell — Wazuh alert observed
 
-The initial rules are expected to use these decoded Sysmon fields. Confirm their exact names and values against a real event from this Wazuh deployment before writing production rules.
+The lab's benign `-EncodedCommand` test reached Wazuh and generated **rule 92057, level 12**, mapped to ATT&CK T1059.001. The event was decoded by `windows_eventchannel` and included Sysmon Event ID 1, the PowerShell image and command line, and its parent image.
 
-| Field | Purpose |
+Rule 92057 is existing Wazuh coverage for an encoded PowerShell child process launched by a PowerShell parent. Our custom D002 rule is deliberately narrower in a different dimension: it looks for encoded PowerShell launched by a **non-PowerShell parent**, extending coverage without intentionally duplicating the observed rule 92057 condition.
+
+### Account discovery — local Sysmon event observed
+
+The local Sysmon Event ID 1 record for `whoami.exe /all` was captured with `powershell.exe` as its parent and RuleName metadata identifying T1033. No corresponding Wazuh alert JSON has been supplied yet.
+
+The absence of this event from `wazuh-alerts-*` does not by itself prove an ingestion failure. Wazuh's base Sysmon Event ID 1 rule is a level-0 grouping rule; ordinary process events that do not match an alerting child rule do not appear in the alerts index. To inspect all received events, configure JSON archives and enable their indexing, or use a custom rule such as D003 to create an alert for the behavior.
+
+See the [sanitized evidence record](../evidence/2026-11-22-sysmon-event1-validation.md).
+
+## Telemetry fields confirmed in the Wazuh event
+
+The supplied Wazuh JSON confirms these decoded field names for Sysmon Event ID 1:
+
+| Rule-engine field | Evidence |
 |---|---|
-| `win.system.eventID` | Identify Sysmon Event ID 1 |
-| `win.eventdata.image` | Executable path |
-| `win.eventdata.commandLine` | Full process command line |
+| `win.system.eventID` | `1` |
+| `win.system.channel` | `Microsoft-Windows-Sysmon/Operational` |
+| `win.eventdata.image` | PowerShell executable path |
+| `win.eventdata.commandLine` | Full command line containing `-EncodedCommand` |
 | `win.eventdata.parentImage` | Parent executable path |
-| `win.eventdata.parentCommandLine` | Parent process command line |
-| `win.eventdata.user` | Account running the process |
-| `win.eventdata.processGuid` | Process correlation identifier |
-| `win.eventdata.parentProcessGuid` | Parent process correlation identifier |
-| `win.eventdata.hashes` | Available process hashes |
+| `win.eventdata.parentCommandLine` | Parent command line |
+| `win.eventdata.processGuid` | Present |
+| `win.eventdata.parentProcessGuid` | Present |
+| `win.eventdata.user` | Present |
 
-Field availability can differ with collection and decoding configuration. Do not assume a missing field is populated.
+In the indexed alert JSON, these are nested under `data.win...`. In Wazuh rule XML, the field names are referenced as `win.eventdata.image`, `win.eventdata.commandLine`, and so on (without the JSON wrapper `data.` prefix). This field naming is also demonstrated by Wazuh rule 92057, which matched the submitted event.
 
-## Lab evidence received — 2026-11-22
+## Rule implementation
 
-A local Windows Sysmon Event ID 1 sample was captured for `whoami.exe /all`. It records `powershell.exe` as the parent image and includes Sysmon RuleName metadata identifying T1033 (System Owner/User Discovery). A benign PowerShell `-EncodedCommand` test also executed and printed its expected marker.
+The initial custom XML is committed at:
 
-This validates local Sysmon process telemetry and gives us a concrete parent-child and discovery test case. It does **not yet prove** that the same events reached Wazuh or identify the exact Wazuh-decoded field paths. The full encoded-process Sysmon event and Wazuh event JSON are still required before final rule tuning.
+`wazuh/rules/soc_windows_baseline.xml`
 
-See [the sanitized evidence record](../evidence/2026-11-22-sysmon-event1-validation.md).
+It contains three draft rules:
 
-## Detection hypotheses and logic
+- **100500 / D001:** PowerShell execution with selected suspicious command-line indicators such as execution-policy bypass, hidden window, download, or dynamic execution patterns.
+- **100501 / D002:** Encoded PowerShell launched by a parent other than PowerShell or PowerShell 7. This complements the observed existing rule 92057.
+- **100510 / D003:** `whoami.exe /all` identity and privilege discovery.
+
+The file is a draft. These rules have **not yet been deployed, parsed by this Wazuh manager, or positively and negatively validated**. Do not treat them as active protections until the steps below pass.
+
+## Detection hypotheses and tuning
 
 ### D001 — Suspicious PowerShell execution
 
-**Behavior:** PowerShell or PowerShell 7 starts with suspicious execution options or script content.
+**Behavior:** PowerShell or PowerShell 7 starts with selected execution options or command patterns that warrant investigation.
 
-Initial command-line indicators to evaluate:
+Initial indicators include execution-policy bypass, hidden window, `DownloadString`, `Invoke-WebRequest`, `Start-BitsTransfer`, `FromBase64String`, and `IEX`.
 
-- Hidden window options such as `-WindowStyle Hidden`
-- Execution policy bypass options
-- Non-interactive execution combined with other suspicious behavior
-- Download-and-execute patterns such as `DownloadString`, `Invoke-WebRequest`, or `IEX`
-- Base64 decoding or dynamically executed content
-
-**Tuning:** Do not alert on every PowerShell process. Evaluate combinations of executable, arguments, parent process, user context, and environment baselines.
+**Tuning:** These are context signals, not proof of malicious activity. Administrative scripts and software deployment tools may use some of these features. Validate parent, user, path, and command-line context; add exceptions only when justified by evidence.
 
 ### D002 — Encoded PowerShell commands
 
-**Behavior:** PowerShell is launched with `-EncodedCommand` or its accepted abbreviated form.
+**Behavior:** PowerShell is launched with an encoded-command parameter.
 
-**Tuning:** Encoded commands are not automatically malicious. Capture the full command line, decode the Base64 content safely during analysis, and inspect the resulting script. Do not execute decoded content during triage.
+The currently observed Wazuh rule 92057 detects the specific pattern where a PowerShell parent starts an encoded PowerShell child. Custom rule 100501 is intended to detect encoded PowerShell launched by a non-PowerShell parent.
+
+**Tuning:** Encoded commands are not automatically malicious. Decode Base64 as text for inspection; never execute the decoded content as part of triage.
 
 ### D003 — Account and domain discovery
 
-**Behavior:** A process enumerates local/domain users, groups, or domain trust information.
+**Behavior:** A process enumerates local/domain users, groups, or identity context.
 
-Initial commands to evaluate:
+The first custom rule, 100510, targets the observed `whoami.exe /all` behavior. Future related rules will cover `net.exe user`, `net.exe localgroup`, `net.exe group`, `nltest.exe /domain_trusts`, and relevant PowerShell discovery cmdlets.
 
-- `net.exe user`
-- `net.exe localgroup`
-- `net.exe group`
-- `whoami.exe /all`
-- `nltest.exe /domain_trusts`
-- PowerShell commands such as `Get-LocalUser`, `Get-LocalGroup`, `Get-ADUser`, or `Get-ADGroup`
-
-**Tuning:** Administrative scripts and inventory tools may perform these operations. Capture command arguments and user/parent context.
+**Tuning:** Inventory tools and administrative scripts may legitimately perform discovery. Add separate rules with accurate ATT&CK mappings rather than assigning every discovery technique to one broad rule.
 
 ### D004 — Suspicious LOLBin usage
 
 **Behavior:** A legitimate Windows utility is used with arguments associated with proxy execution, script execution, download, or file decoding.
 
-Initial binaries and command-line patterns to evaluate:
+Initial binaries to evaluate: `certutil.exe`, `mshta.exe`, `rundll32.exe`, `regsvr32.exe`, `bitsadmin.exe`, `wscript.exe`, and `cscript.exe`.
 
-| Binary | Context to investigate |
-|---|---|
-| `certutil.exe` | URL retrieval, cache operations, or file decoding |
-| `mshta.exe` | Remote HTA, JavaScript, or VBScript execution |
-| `rundll32.exe` | Unusual DLL paths or script/URL invocation |
-| `regsvr32.exe` | Suspicious scriptlet or remote registration patterns |
-| `bitsadmin.exe` | Unexpected transfer jobs |
-| `wscript.exe` / `cscript.exe` | Scripts launched from unusual locations or parents |
-
-**Tuning:** Binary execution alone is insufficient. Require suspicious arguments, paths, parent process, or corroborating telemetry. The first implementation will prioritize a small, explainable set of behaviors over a broad noisy rule.
+**Tuning:** Binary execution alone is insufficient. Require suspicious arguments, paths, parent process, or corroborating telemetry.
 
 ### D005 — Suspicious parent-child process relationships
 
-**Behavior:** Office applications launch scripting engines, command shells, or proxy execution utilities.
+**Behavior:** An application such as Office launches a scripting engine, command shell, or proxy-execution utility.
 
-Initial parent processes:
+Initial parent processes: `WINWORD.EXE`, `EXCEL.EXE`, `POWERPNT.EXE`, `OUTLOOK.EXE`, and `ONENOTE.EXE`.
 
-- `WINWORD.EXE`
-- `EXCEL.EXE`
-- `POWERPNT.EXE`
-- `OUTLOOK.EXE`
-- `ONENOTE.EXE`
+Initial child processes: `powershell.exe`, `pwsh.exe`, `cmd.exe`, `wscript.exe`, `cscript.exe`, `mshta.exe`, `rundll32.exe`, and `regsvr32.exe`.
 
-Initial child processes:
-
-- `powershell.exe` / `pwsh.exe`
-- `cmd.exe`
-- `wscript.exe` / `cscript.exe`
-- `mshta.exe`
-- `rundll32.exe`
-- `regsvr32.exe`
-
-**Tuning:** Validate the actual `parentImage` and `image` fields. Add known legitimate software exceptions only when supported by observed evidence. Consider parent command line and process GUID correlation for deeper investigation.
+**Tuning:** Parent-child combinations need business-context validation. Process GUIDs can support correlation across related Sysmon events.
 
 ## Validation methodology
 
-Every detection must pass all of the following before being marked complete:
+Every custom detection must pass:
 
-1. **Telemetry check:** Verify that the endpoint generated the expected Sysmon event.
-2. **Decoder check:** Confirm Wazuh exposes the expected event ID and fields.
-3. **Positive test:** A controlled test event matches the intended rule.
-4. **Negative test:** A benign or unrelated event does not match the rule.
-5. **False-positive review:** Document legitimate software and administrative behavior that may trigger it.
-6. **Live validation:** Confirm the alert appears in Wazuh after the custom rule is deployed.
-7. **Evidence:** Retain sanitized raw event, logtest output, alert JSON, and test notes.
+1. **Telemetry:** Expected Sysmon event is generated.
+2. **Decoder:** Wazuh extracts the expected event ID and fields.
+3. **Positive test:** Controlled behavior matches the intended custom rule.
+4. **Negative test:** Benign or unrelated behavior does not produce an unintended alert.
+5. **False-positive review:** Legitimate administrative behavior is documented.
+6. **Live validation:** The custom rule ID appears in Wazuh alerts after deployment.
+7. **Evidence:** Sanitized event, logtest output, alert JSON, and test notes are retained.
 
-Use `/var/ossec/bin/wazuh-logtest` on the Wazuh server to inspect decoding and rule matches before live deployment. Wazuh documents that the logtest tool evaluates the same rules as its analysis engine; restart the manager after saving custom rules before expecting live alerts to use the new rules.
+Use `/var/ossec/bin/wazuh-logtest` to test the rules before relying on them. Save rule files under `/var/ossec/etc/rules/`; after successful testing, restart the Wazuh manager to apply the rules to live events.
 
-## Test record template
+## Safe positive tests planned
 
-| Test | Input / activity | Expected result | Actual result | Evidence |
-|---|---|---|---|---|
-| Positive | Controlled behavior for the detection | Custom rule matches | Pending | Pending |
-| Negative | Benign PowerShell / administrative activity | No high-confidence alert | Pending | Pending |
-| Live | Repeat controlled behavior on endpoint | Alert visible in Wazuh | Pending | Pending |
+### D001 — execution-policy bypass indicator with harmless command
 
-## Rule implementation layout
-
-Custom rules will be version-controlled here and deployed to the Wazuh manager's custom rules directory only after validation:
-
-```text
-detections/
-├── README.md
-└── wazuh/
-    ├── README.md
-    └── rules/
-        └── soc_windows_baseline.xml
+```powershell
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "Write-Output 'SOC_LAB_D001_BYPASS_TEST'"
 ```
 
-Use the reserved custom IDs above. Do not overwrite built-in Wazuh rule files.
+This does not download or execute external code; it tests whether the command-line indicator matches.
 
-## Current next action
+### D002 — encoded PowerShell from cmd.exe
 
-Revalidate the running Docker services, Wazuh agent status, Sysmon service, and one real Sysmon Event ID 1 event. Inspect the event in Wazuh and record the actual decoded fields. Then implement D001 and D002 first, test them with `wazuh-logtest`, and proceed through D003–D005.
+Generate the Base64 string from a harmless payload and launch the child PowerShell process via `cmd.exe` so its parent image is not PowerShell. This is designed to test custom rule 100501 rather than the previously observed rule 92057.
+
+```powershell
+$payload = "Write-Output 'SOC_LAB_D002_CMD_PARENT'"
+$encoded = [Convert]::ToBase64String(
+    [Text.Encoding]::Unicode.GetBytes($payload)
+)
+$ps = "$env:WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe"
+$cmd = "`"$ps`" -NoLogo -NoProfile -EncodedCommand $encoded"
+
+Start-Process -FilePath "$env:WINDIR\System32\cmd.exe" -ArgumentList "/c $cmd" -Wait -NoNewWindow
+```
+
+### D003 — identity discovery
+
+```powershell
+whoami.exe /all
+```
+
+This was already observed locally in Sysmon. Repeat it after deployment to confirm custom rule 100510 generates a Wazuh alert.
+
+## Test record
+
+| Test | Expected result | Actual result |
+|---|---|---|
+| Existing D002 encoded PowerShell test | Existing rule 92057 triggers when PowerShell is the parent | Confirmed: rule 92057, level 12 |
+| Custom D001 positive test | Rule 100500 triggers | Pending |
+| Custom D001 benign test | No alert from rule 100500 | Pending |
+| Custom D002 with cmd.exe parent | Rule 100501 triggers | Pending |
+| Custom D003 `whoami.exe /all` | Rule 100510 triggers | Pending |
 
 ## References
 
 - [Wazuh custom rules](https://documentation.wazuh.com/current/user-manual/ruleset/rules/custom.html)
+- [Wazuh rules XML syntax](https://documentation.wazuh.com/current/user-manual/ruleset/ruleset-xml-syntax/rules.html)
 - [Wazuh testing decoders and rules](https://documentation.wazuh.com/current/user-manual/ruleset/testing.html)
 - [Wazuh Sysmon ruleset](https://github.com/wazuh/wazuh-ruleset/blob/master/rules/0595-win-sysmon_rules.xml)
+- [Wazuh rule 92057 — encoded PowerShell child process](https://detections.org/detections/wazuh/wazuh/92057/)
+- [Wazuh event archiving](https://documentation.wazuh.com/current/user-manual/manager/event-logging.html)
 - [Microsoft Sysmon events](https://learn.microsoft.com/en-us/windows/security/operating-system-security/sysmon/sysmon-events)
 - [MITRE ATT&CK](https://attack.mitre.org/)
 
 ---
 
-*This catalogue records the initial detection design. A detection must not be marked implemented or validated until its rule, positive test, negative test, and live result are documented.*
+*The initial custom XML is draft code. Only mark a rule implemented after Wazuh accepts it, and only mark it validated after live positive and negative tests.*

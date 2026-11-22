@@ -60,9 +60,9 @@ A Wazuh rule 92213 alert (level 15) was inspected on 2026-11-22. It was caused b
 The supplied Sysmon Event ID 11 event identifies `powershell.exe` as the creator. This filename pattern is associated with PowerShell script execution-policy test behavior, so the specific lab event is assessed as likely benign. Rule 92213 matches broad Temp-path plus script/executable-extension conditions; it does not establish that a file was transferred from an external source. Its T1105 mapping should therefore not be treated as proof of ingress transfer in this event.
 
 - [Full sanitized analysis and proposed tuning](../evidence/2026-11-22-rule-92213-false-positive.md)
-- [Draft narrow level-0 exception](./wazuh/rules/noise_reduction_draft.xml)
+- [Draft narrow level-3 severity tuning](./wazuh/rules/noise_reduction_draft.xml)
 
-The exception is **draft only**. Validate the parent/child match with `wazuh-logtest` before deployment. Do not suppress all PowerShell files in Temp or disable rule 92213 globally.
+The tuning is **draft only**. It retains a low-priority alert rather than silently suppressing the event. Validate the parent/child match with `wazuh-logtest` before deployment. Do not suppress all PowerShell files in Temp or disable rule 92213 globally.
 
 ## Rule implementation
 

@@ -108,6 +108,18 @@ The first milestone focused on confirming the telemetry pipeline, not on claimin
 
 **Evidence note:** Screenshots, raw event samples, Sysmon configuration, Docker Compose files, and agent configuration have not yet been added to this repository. Add sanitized evidence as it is recaptured and verified. Never commit API keys, credentials, private IP information that should not be disclosed, or sensitive endpoint data.
 
+## Milestone 2 — Detection engineering baseline
+
+The initial five detection hypotheses have been documented in the [Detection Engineering Baseline](./detections/README.md):
+
+1. Suspicious PowerShell execution
+2. Encoded PowerShell commands
+3. Account and domain discovery
+4. Suspicious LOLBin usage
+5. Suspicious parent-child process relationships
+
+The baseline catalogue reserves custom rule IDs and defines telemetry fields, tuning considerations, and a positive/negative validation methodology. **Custom rules are not yet implemented or validated.** The next action is to revalidate the endpoint telemetry and inspect a real Sysmon Event ID 1 event before finalizing rule field matches.
+
 ## Planned milestones
 
 The following items are planned and are not represented as completed work.

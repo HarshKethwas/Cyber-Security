@@ -36,6 +36,14 @@ The initial rules are expected to use these decoded Sysmon fields. Confirm their
 
 Field availability can differ with collection and decoding configuration. Do not assume a missing field is populated.
 
+## Lab evidence received — 2026-11-22
+
+A local Windows Sysmon Event ID 1 sample was captured for `whoami.exe /all`. It records `powershell.exe` as the parent image and includes Sysmon RuleName metadata identifying T1033 (System Owner/User Discovery). A benign PowerShell `-EncodedCommand` test also executed and printed its expected marker.
+
+This validates local Sysmon process telemetry and gives us a concrete parent-child and discovery test case. It does **not yet prove** that the same events reached Wazuh or identify the exact Wazuh-decoded field paths. The full encoded-process Sysmon event and Wazuh event JSON are still required before final rule tuning.
+
+See [the sanitized evidence record](../evidence/2026-11-22-sysmon-event1-validation.md).
+
 ## Detection hypotheses and logic
 
 ### D001 — Suspicious PowerShell execution

@@ -1,12 +1,11 @@
-# Evidence Record — Sysmon Process Creation Baseline
+# Evidence Record — Sysmon and Wazuh Process-Creation Baseline
 
 **Date:** 2026-11-22  
-**Endpoint:** Windows 11 lab endpoint (hostname and account intentionally omitted)  
-**Source:** Local Windows Event Log — `Microsoft-Windows-Sysmon/Operational`  
-**Event:** Sysmon Event ID 1 — Process Create  
-**Validation type:** Local telemetry generation
+**Endpoint:** Windows 11 lab endpoint (host and account identifiers omitted)  
+**Source:** Sysmon Operational channel and Wazuh alert index  
+**Primary event:** Sysmon Event ID 1 — Process Create
 
-## Observed: account and user discovery
+## 1. Local Sysmon: account and user discovery
 
 A controlled command was executed:
 
@@ -14,62 +13,79 @@ A controlled command was executed:
 whoami.exe /all
 ```
 
-The captured Sysmon Event ID 1 record included:
+The local Sysmon Event ID 1 record included:
 
 | Field | Sanitized observation |
 |---|---|
 | Event ID | 1 |
 | Image | `C:\Windows\System32\whoami.exe` |
-| Command line | `"C:\WINDOWS\system32\whoami.exe" /all` |
+| Command line | `whoami.exe /all` |
 | Parent image | `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe` |
 | Sysmon RuleName | `technique_id=T1033, technique_name=System Owner/User Discovery` |
-| Process GUID | Present in source event |
-| Parent Process GUID | Present in source event |
-| Hashes | Present in source event; values intentionally not copied here |
+| Process GUID | Present |
+| Parent Process GUID | Present |
 
-This confirms that Sysmon recorded the process and its parent relationship. The Sysmon RuleName metadata labels this activity as T1033 (System Owner/User Discovery).
+This confirms local Sysmon telemetry for `whoami.exe /all` and its parent process.
 
-## Observed: encoded PowerShell test execution
+## 2. Wazuh: encoded PowerShell event received and alerted
 
-A benign encoded PowerShell command was created from this harmless payload:
+A benign encoded PowerShell test was created from:
 
 ```powershell
 Write-Output 'SOC_LAB_ENCODED_BASELINE'
 ```
 
-It was launched with the `-EncodedCommand` argument. The console displayed:
+The command was launched using PowerShell `-EncodedCommand`. The Wazuh event JSON supplied for this test confirms:
 
-```text
-SOC_LAB_ENCODED_BASELINE
-```
+| Field | Observed value |
+|---|---|
+| Index | `wazuh-alerts-4.x-2026.11.22` |
+| Sysmon event ID | `1` |
+| Channel | `Microsoft-Windows-Sysmon/Operational` |
+| Decoder | `windows_eventchannel` |
+| Location | `EventChannel` |
+| Process image | `powershell.exe` |
+| Command line | Contains `-EncodedCommand` and the benign test payload |
+| Parent image | `powershell.exe` |
+| Wazuh rule ID | `92057` |
+| Wazuh rule level | `12` |
+| Rule description | PowerShell spawned PowerShell with a Base64-encoded command |
+| ATT&CK | `T1059.001` |
 
-This confirms that the controlled test process executed successfully. The screenshot evidence captured the command and console output, but did not include the complete corresponding Sysmon Event ID 1 record with its full command line. That event still needs to be isolated for rule validation.
+This proves the encoded PowerShell Sysmon event reached Wazuh and generated an indexed alert.
 
-## Validation status
+Rule 92057 is an existing Wazuh ruleset detection. Its condition looks for a PowerShell parent and a PowerShell command line containing an encoded-command parameter. The lab's observed test matched that behavior. The custom D002 rule is therefore designed as complementary coverage for encoded PowerShell launched by a **non-PowerShell parent**, rather than duplicating the exact rule 92057 condition.
+
+## 3. Why the whoami event was not found in wazuh-alerts
+
+The `whoami.exe /all` event was visible in the local Sysmon channel, but no corresponding Wazuh alert JSON has been provided yet.
+
+This does not prove that Wazuh failed to receive it. The normal Sysmon Event ID 1 base rule is a level-0 grouping rule; level-0 events are not displayed as alerts. The `wazuh-alerts-*` index stores events that trigger alert rules with a sufficiently high level.
+
+To search unalerted events, configure Wazuh event archiving (`logall_json`) and enable Filebeat archive forwarding, then query the `wazuh-archives-*` index. This consumes additional disk space, so enable it deliberately and monitor storage. Alternatively, deploy and validate the custom D003 rule for `whoami.exe /all`; a matching custom alert should then appear in the alerts index.
+
+## 4. Validation status
 
 | Check | Result |
 |---|---|
-| Sysmon Event ID 1 generation | Observed |
-| `whoami.exe /all` captured | Observed |
-| Parent process captured | Observed |
-| Sysmon T1033 RuleName metadata | Observed |
+| Local Sysmon Event ID 1 generation | Observed |
+| Local `whoami.exe /all` event | Observed |
+| Parent-process metadata in Sysmon | Observed |
 | Benign encoded PowerShell execution | Observed |
-| Full encoded PowerShell Sysmon record | Pending |
-| Wazuh receipt of these exact events | Not yet evidenced in this record |
-| Wazuh decoded field names | Pending |
-| Custom rule positive / negative tests | Pending |
+| Encoded PowerShell event received by Wazuh | Confirmed |
+| Wazuh alert for encoded PowerShell | Confirmed — rule 92057, level 12 |
+| Wazuh decoded fields | Confirmed for image, commandLine, parentImage, eventID and channel |
+| Wazuh alert for `whoami.exe /all` | Not yet observed |
+| Custom rules 100500 / 100501 / 100510 | Drafted; not yet deployed or validated |
+| Positive and negative custom-rule tests | Pending |
 
-## Next validation step
+## 5. Next validation steps
 
-Find these same events in Wazuh and inspect the full alert/event JSON. Confirm the decoded field paths for:
+1. Deploy the lab's custom XML rules to the Wazuh manager's `/var/ossec/etc/rules/` directory.
+2. Validate the XML and rule matching with `wazuh-logtest`.
+3. Restart the Wazuh manager only after the test succeeds.
+4. Re-run harmless positive tests for D001, D002 (from a non-PowerShell parent), and D003 (`whoami.exe /all`).
+5. Confirm the new rule IDs appear in Wazuh alerts.
+6. Run benign negative tests and record any false positives.
 
-- `win.system.eventID`
-- `win.system.channel`
-- `win.eventdata.image`
-- `win.eventdata.commandLine`
-- `win.eventdata.parentImage`
-- `win.eventdata.parentCommandLine`
-
-Do not infer Wazuh ingestion from the local Windows Event Log alone. Use the Wazuh event record to prove the end-to-end path.
-
-**Privacy:** Usernames, host identifiers, SIDs, hashes, and other endpoint-specific values are intentionally omitted from this public evidence note.
+**Privacy:** Usernames, host identifiers, SIDs, agent IP, process hashes and encoded payload strings are intentionally omitted from this public evidence record.

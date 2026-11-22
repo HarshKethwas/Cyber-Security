@@ -1,0 +1,55 @@
+<!--
+  AI-Powered SOC Lab - custom Windows Sysmon detections
+  Rule IDs: 100500-100510
+  Deploy to: /var/ossec/etc/rules/soc_windows_baseline.xml
+  Validate with wazuh-logtest before relying on live alerts.
+-->
+<group name="windows,sysmon,soc_windows_baseline,">
+
+  <!-- D001: suspicious PowerShell execution options / command patterns -->
+  <rule id="100500" level="8">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(powershell|pwsh)\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(-executionpolicy\s+bypass|-ep\s+bypass|-windowstyle\s+hidden|-w\s+hidden|downloadstring|invoke-webrequest|start-bitstransfer|frombase64string|\biex\b)</field>
+    <description>SOC D001: Suspicious PowerShell execution pattern on $(win.system.computer)</description>
+    <mitre>
+      <id>T1059.001</id>
+    </mitre>
+    <group>soc_d001,powershell,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <!--
+    D002: encoded PowerShell launched by a non-PowerShell parent.
+    Wazuh rule 92057 already covers a PowerShell parent spawning an
+    encoded PowerShell child. This rule intentionally complements it
+    rather than duplicating that exact case.
+  -->
+  <rule id="100501" level="9">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(powershell|pwsh)\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)\s-(?:encodedcommand|enc|enco|en|ec)\b\s+[A-Za-z0-9+/=]{16,}</field>
+    <field name="win.eventdata.parentImage" type="pcre2" negate="yes">(?i)\\(powershell|pwsh)\.exe$</field>
+    <description>SOC D002: Encoded PowerShell command launched by a non-PowerShell parent on $(win.system.computer)</description>
+    <mitre>
+      <id>T1059.001</id>
+      <id>T1027</id>
+    </mitre>
+    <group>soc_d002,powershell,encoded_command,</group>
+    <options>no_full_log</options>
+  </rule>
+
+  <!-- D003: whoami /all identity discovery -->
+  <rule id="100510" level="7">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\whoami\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)\s/all(?:\s|$)</field>
+    <description>SOC D003: Windows identity and privilege discovery using whoami /all on $(win.system.computer)</description>
+    <mitre>
+      <id>T1033</id>
+    </mitre>
+    <group>soc_d003,account_discovery,</group>
+    <options>no_full_log</options>
+  </rule>
+
+</group>

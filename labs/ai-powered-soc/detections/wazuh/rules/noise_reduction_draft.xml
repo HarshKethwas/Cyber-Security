@@ -1,0 +1,11 @@
+<!--
+  Narrow noise-reduction exception for a known PowerShell execution-policy
+  test file. DRAFT ONLY — validate with wazuh-logtest before deployment.
+-->
+<group name="windows,sysmon,noise_reduction,">
+  <rule id="100599" level="0">
+    <if_sid>92213</if_sid>
+    <field name="win.eventdata.targetFilename" type="pcre2">(?i)\\AppData\\Local\\Temp\\__PSScriptPolicyTest_[^\\]+\.ps1$</field>
+    <description>Suppress known PowerShell execution-policy test file creation</description>
+  </rule>
+</group>

@@ -1,11 +1,13 @@
 <!--
-  Narrow noise-reduction exception for a known PowerShell execution-policy
+  Narrow severity-tuning child rule for a known PowerShell execution-policy
   test file. DRAFT ONLY — validate with wazuh-logtest before deployment.
+  This keeps a low-severity alert instead of silently discarding the event.
 -->
 <group name="windows,sysmon,noise_reduction,">
-  <rule id="100599" level="0">
+  <rule id="100599" level="3">
     <if_sid>92213</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(powershell|pwsh)\.exe$</field>
     <field name="win.eventdata.targetFilename" type="pcre2">(?i)\\AppData\\Local\\Temp\\__PSScriptPolicyTest_[^\\]+\.ps1$</field>
-    <description>Suppress known PowerShell execution-policy test file creation</description>
+    <description>SOC: PowerShell execution-policy test file created in Temp — low-priority review</description>
   </rule>
 </group>

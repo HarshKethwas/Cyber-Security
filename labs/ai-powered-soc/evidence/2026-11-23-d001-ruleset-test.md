@@ -90,3 +90,28 @@ Wazuh documentation states that saving custom-rule changes is sufficient for Rul
 2. Execute a harmless PowerShell command with `-ExecutionPolicy Bypass` on the lab endpoint and search Wazuh alerts for rule 100500.
 3. Execute ordinary PowerShell and confirm rule 100500 does not trigger in live telemetry.
 
+
+## Live endpoint test — Sysmon capture confirmed (2026-11-24)
+
+A fresh benign live test was executed on the Windows 11 endpoint using PowerShell with `-ExecutionPolicy Bypass` and a unique output marker:
+
+```text
+SOC_LAB_D001_LIVE_20261124_011505
+```
+
+The elevated PowerShell query returned a Sysmon Event ID 1 record with:
+
+| Field | Observation |
+|---|---|
+| Event ID | 1 — Process Create |
+| UTC time | `2026-11-23 19:45:05.510` |
+| Image | Windows PowerShell 5.1 executable |
+| Parent image | Windows PowerShell 5.1 executable |
+| Command line | Contains `-ExecutionPolicy Bypass` and the unique test marker |
+
+**Conclusion:** Live Windows process generation and local Sysmon capture are confirmed. This evidence does not yet confirm Wazuh agent forwarding, manager rule processing, or a live alert from rule 100500.
+
+### Next diagnostic
+
+Search Wazuh alerts for the unique marker and inspect any matching built-in alert. Then submit an equivalent single-line JSON event to the manager's `/var/ossec/bin/wazuh-logtest` to determine whether the manager has loaded custom rule 100500. Compare the logtest result with the Dashboard Ruleset Test result.
+

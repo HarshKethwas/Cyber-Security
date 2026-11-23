@@ -206,3 +206,18 @@ This was already observed locally in Sysmon. Repeat it after deployment to confi
 On 2026-11-24, the JSON test event was submitted directly to `/var/ossec/bin/wazuh-logtest` inside the running Wazuh Manager 4.13.1 container. Phase 2 decoded the expected event fields and Phase 3 matched **100500 / level 8** with ATT&CK T1059.001.
 
 This confirms the manager-side rule test. It is not a live EventChannel alert. Live event forwarding and indexing for the unique Windows test marker remain under investigation.
+
+## Important correction — native Sysmon rule chain
+
+The initial D001 synthetic positive and negative tests used JSON input. They proved that the JSON decoder could extract the fields and that the original top-level rule conditions matched or did not match. They did **not** reproduce the Windows EventChannel decoder and built-in Sysmon rule hierarchy.
+
+Wazuh's native Sysmon Event ID 1 hierarchy includes the level-0 parent rule **61603** (group `sysmon_event1`). A custom Sysmon Process Create detection should explicitly refine that parent. The rule source has therefore been corrected so D001, D002, and D003 use:
+
+```xml
+<if_sid>61603</if_sid>
+```
+
+This ensures the custom rule is evaluated as a child of Wazuh's Sysmon Event ID 1 process-creation rule. The updated XML is in [soc_windows_baseline.xml](./wazuh/rules/soc_windows_baseline.xml).
+
+The direct JSON synthetic test should not be treated as validation of the corrected child-rule hierarchy, because it decoded as `json`, not `windows_eventchannel`. The corrected rule must be validated against the native EventChannel path using live telemetry. Do not mark D001 live-complete until rule 100500 appears in Wazuh alerts for the fresh test event.
+

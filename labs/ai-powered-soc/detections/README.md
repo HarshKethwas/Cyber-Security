@@ -66,9 +66,9 @@ The tuning is **draft only**. It retains a low-priority alert rather than silent
 
 ## D001 — first positive Ruleset Test passed (2026-11-23)
 
-The Dashboard Ruleset Test was supplied with a compact, single-line synthetic JSON Sysmon Event ID 1 record. Phase 2 decoded the expected `win.system.*` and `win.eventdata.*` fields, and Phase 3 matched custom rule **100500**, level **8**, mapped to T1059.001 (Execution).
+The Dashboard Ruleset Test was supplied with compact, single-line synthetic JSON Sysmon Event ID 1 records. The positive event decoded the expected fields and matched custom rule **100500**, level **8**, mapped to T1059.001 (Execution). A negative event representing ordinary PowerShell execution decoded successfully but produced no Phase 3 rule match.
 
-This is a successful **synthetic positive test only**. The negative test and live Windows-to-Wazuh alert test are still pending. See the [D001 test evidence](../evidence/2026-11-23-d001-ruleset-test.md).
+Both **synthetic positive and negative tests passed**. Live Windows-to-Wazuh positive and negative validation remain pending. See the [D001 test evidence](../evidence/2026-11-23-d001-ruleset-test.md).
 
 ## Rule implementation
 

@@ -8,7 +8,8 @@
 
   <!-- D001: suspicious PowerShell execution options / command patterns -->
   <rule id="100500" level="8">
-    <if_group>sysmon_event1</if_group>
+    <field name="win.system.channel">^Microsoft-Windows-Sysmon/Operational$</field>
+    <field name="win.system.eventID">^1$</field>
     <field name="win.eventdata.image" type="pcre2">(?i)\\(powershell|pwsh)\.exe$</field>
     <field name="win.eventdata.commandLine" type="pcre2">(?i)(-executionpolicy\s+bypass|-ep\s+bypass|-windowstyle\s+hidden|-w\s+hidden|downloadstring|invoke-webrequest|start-bitstransfer|frombase64string|\biex\b)</field>
     <description>SOC D001: Suspicious PowerShell execution pattern on $(win.system.computer)</description>

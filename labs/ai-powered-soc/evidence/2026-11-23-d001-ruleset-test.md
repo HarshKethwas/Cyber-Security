@@ -134,3 +134,11 @@ Observed result:
 
 **Conclusion:** The running manager's `wazuh-logtest` engine has loaded and can match rule 100500 against this synthetic JSON representation. This still does not prove that the live Windows EventChannel record was forwarded, processed by the manager, and indexed as a live alert. The next task is to search Wazuh for the unique live marker and inspect the matching raw event if found.
 
+
+
+## Interpretation correction — synthetic JSON versus EventChannel
+
+The positive and negative tests documented earlier used the `json` decoder. They validated the initial field conditions but did not reproduce the real Windows EventChannel decoder hierarchy. For native Sysmon Event ID 1, Wazuh applies built-in parent rule **61603**, which is level 0 and adds the `sysmon_event1` group. The custom rules have now been corrected to use `<if_sid>61603</if_sid>`.
+
+Therefore, the earlier synthetic test results are retained as historical JSON-condition tests, not as proof that the corrected D001 child rule matches native EventChannel events. The next required evidence is a live Wazuh alert with rule ID 100500 from the endpoint marker event.
+

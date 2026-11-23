@@ -64,6 +64,12 @@ The supplied Sysmon Event ID 11 event identifies `powershell.exe` as the creator
 
 The tuning is **draft only**. It retains a low-priority alert rather than silently suppressing the event. Validate the parent/child match with `wazuh-logtest` before deployment. Do not suppress all PowerShell files in Temp or disable rule 92213 globally.
 
+## D001 — first positive Ruleset Test passed (2026-11-23)
+
+The Dashboard Ruleset Test was supplied with a compact, single-line synthetic JSON Sysmon Event ID 1 record. Phase 2 decoded the expected `win.system.*` and `win.eventdata.*` fields, and Phase 3 matched custom rule **100500**, level **8**, mapped to T1059.001 (Execution).
+
+This is a successful **synthetic positive test only**. The negative test and live Windows-to-Wazuh alert test are still pending. See the [D001 test evidence](../evidence/2026-11-23-d001-ruleset-test.md).
+
 ## Rule implementation
 
 The initial custom XML is committed at:

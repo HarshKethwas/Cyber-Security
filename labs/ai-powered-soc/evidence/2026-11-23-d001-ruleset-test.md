@@ -84,7 +84,9 @@ Observed output:
 
 ## Next tests
 
-1. Live positive test: execute a harmless PowerShell command with `-ExecutionPolicy Bypass` on the lab endpoint and search Wazuh alerts for rule 100500.
-2. Live negative test: execute ordinary PowerShell and confirm rule 100500 does not trigger.
-3. Inspect the Wazuh manager and dashboard state after rule file saving; confirm whether a restart or ruleset reload is required by the dashboard version.
+Wazuh documentation states that saving custom-rule changes is sufficient for Ruleset Test, but the Wazuh manager must be restarted before the updated rules generate live alerts. After a successful Ruleset Test:
+
+1. Restart the Wazuh manager container and confirm it returns to a healthy running state.
+2. Execute a harmless PowerShell command with `-ExecutionPolicy Bypass` on the lab endpoint and search Wazuh alerts for rule 100500.
+3. Execute ordinary PowerShell and confirm rule 100500 does not trigger in live telemetry.
 

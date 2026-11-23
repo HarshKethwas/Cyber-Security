@@ -115,3 +115,22 @@ The elevated PowerShell query returned a Sysmon Event ID 1 record with:
 
 Search Wazuh alerts for the unique marker and inspect any matching built-in alert. Then submit an equivalent single-line JSON event to the manager's `/var/ossec/bin/wazuh-logtest` to determine whether the manager has loaded custom rule 100500. Compare the logtest result with the Dashboard Ruleset Test result.
 
+
+## Manager-side wazuh-logtest validation — passed (2026-11-24)
+
+The same compact synthetic Sysmon Event ID 1 JSON was piped into the running Wazuh Manager 4.13.1 container:
+
+```powershell
+$json | docker exec -i single-node-wazuh.manager-1 /var/ossec/bin/wazuh-logtest
+```
+
+Observed result:
+
+- Phase 1: pre-decoding completed.
+- Phase 2: JSON decoder extracted `win.eventdata.image`, `commandLine`, `parentImage`, `win.system.channel`, and `win.system.eventID`.
+- Phase 3: custom rule **100500**, level **8**, matched.
+- Description: `SOC D001: Suspicious PowerShell execution pattern on predator`.
+- ATT&CK: T1059.001 (Execution / PowerShell).
+
+**Conclusion:** The running manager's `wazuh-logtest` engine has loaded and can match rule 100500 against this synthetic JSON representation. This still does not prove that the live Windows EventChannel record was forwarded, processed by the manager, and indexed as a live alert. The next task is to search Wazuh for the unique live marker and inspect the matching raw event if found.
+

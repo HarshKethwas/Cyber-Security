@@ -199,3 +199,10 @@ This was already observed locally in Sysmon. Repeat it after deployment to confi
 ---
 
 *The initial custom XML is draft code. Only mark a rule implemented after Wazuh accepts it, and only mark it validated after live positive and negative tests.*
+
+
+### Manager-side rule engine validation
+
+On 2026-11-24, the JSON test event was submitted directly to `/var/ossec/bin/wazuh-logtest` inside the running Wazuh Manager 4.13.1 container. Phase 2 decoded the expected event fields and Phase 3 matched **100500 / level 8** with ATT&CK T1059.001.
+
+This confirms the manager-side rule test. It is not a live EventChannel alert. Live event forwarding and indexing for the unique Windows test marker remain under investigation.

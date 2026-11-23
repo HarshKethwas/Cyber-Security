@@ -57,9 +57,34 @@ D001 passed its positive **synthetic Ruleset Test**. Wazuh's JSON decoder extrac
 
 This does not yet prove that the live Windows event was ingested and generated an alert in `wazuh-alerts-*`. A negative Ruleset Test and a live endpoint test remain pending.
 
+## Negative synthetic test
+
+A second compact JSON event represented ordinary PowerShell execution without any of the D001 command-line indicators:
+
+```powershell
+powershell.exe -NoLogo -NoProfile -Command "Write-Output 'SOC_LAB_D001_BENIGN'"
+```
+
+Observed output:
+
+- Phase 1: Completed pre-decoding.
+- Phase 2: JSON decoder extracted the image, command line, parent image, Sysmon channel, and Event ID.
+- No Phase 3 rule match was reported.
+
+**Result:** Negative synthetic test passed. The benign command did not match custom rule 100500.
+
+## Test summary
+
+| Test | Result |
+|---|---|
+| Positive synthetic event with `-ExecutionPolicy Bypass` | Pass — rule 100500, level 8 |
+| Negative synthetic ordinary PowerShell event | Pass — no rule 100500 match |
+| Live positive endpoint test | Pending |
+| Live negative endpoint test | Pending |
+
 ## Next tests
 
-1. Negative synthetic test: ordinary PowerShell command without any D001 indicators; expected result is no match for rule 100500.
-2. Live positive test: execute a harmless PowerShell command with `-ExecutionPolicy Bypass` on the lab endpoint and search Wazuh alerts for rule 100500.
-3. Live negative test: execute ordinary PowerShell and confirm rule 100500 does not trigger.
+1. Live positive test: execute a harmless PowerShell command with `-ExecutionPolicy Bypass` on the lab endpoint and search Wazuh alerts for rule 100500.
+2. Live negative test: execute ordinary PowerShell and confirm rule 100500 does not trigger.
+3. Inspect the Wazuh manager and dashboard state after rule file saving; confirm whether a restart or ruleset reload is required by the dashboard version.
 

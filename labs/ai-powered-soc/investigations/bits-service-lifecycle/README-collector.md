@@ -1,6 +1,6 @@
 # Read-only BITS evidence collector
 
-The PowerShell collector is provided as a separate download in the companion case package. It is designed to read event logs and the current BITS service/registry state only.
+The PowerShell collector is provided in the companion downloadable case package. It reads event logs and the current BITS service/registry state only.
 
 ## Usage
 
@@ -26,6 +26,6 @@ Set-ExecutionPolicy -Scope Process Bypass
 - Does not start, stop, disable, or reconfigure BITS.
 - Does not complete, cancel, or delete BITS jobs.
 - Does not call `Get-BitsTransfer`.
-- Writes timestamped JSON and CSV evidence exports and a SHA-256 manifest beneath `C:\CyberLab\Evidence`.
+- Writes timestamped JSON and CSV exports plus a SHA-256 manifest beneath `C:\CyberLab\Evidence`.
 
 Review and sanitize collected endpoint data before sharing. Event records may contain usernames, local paths, process command lines, job IDs, and URLs.

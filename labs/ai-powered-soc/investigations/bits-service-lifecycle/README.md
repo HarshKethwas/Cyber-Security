@@ -9,7 +9,8 @@ Evidence-led Windows service lifecycle investigation from the AI-Powered SOC lab
 - [Wazuh custom rules](./wazuh/windows_bits_rules.xml)
 - [Synthetic logtest fixtures](./wazuh/logtest-samples.jsonl)
 - [Test cases](./tests/test-cases.md)
-- [Evidence timeline](./evidence/timeline.csv)
+- [Evidence timeline](./evidence/observed-events.csv)
+- [Read-only PowerShell collector](./powershell/Collect-BITSInvestigation.ps1)
 - [Collector usage](./README-collector.md)
 - [References](./references/sources.md)
 
@@ -17,7 +18,7 @@ Evidence-led Windows service lifecycle investigation from the AI-Powered SOC lab
 - Windows Event ID 7040 (Wazuh rule 61104) recorded repeated BITS startup-type changes.
 - Microsoft documents delayed automatic startup when BITS jobs are active and Demand Start when no jobs are active. A transition alone is not proof of abuse.
 - The active Sysmon configuration excluded the BITS service Start registry value, suppressing Event ID 13 until the targeted exclusion was removed.
-- A controlled test confirmed Event ID 13 visibility and showed `sc.exe` as the requesting tool and `services.exe` as the registry writer.
+- A controlled test confirmed Event ID 13 visibility and showed sc.exe as the requesting tool and services.exe as the registry writer.
 - OneDrive task execution and a C# compiler launch were time-correlated with separate changes; causation was not demonstrated.
 
 ## Wazuh rule design
@@ -29,10 +30,10 @@ Local IDs use **100520–100524** to avoid a collision with existing repository 
 | 100520 | 3 | BITS Event ID 7040 lifecycle context |
 | 100521 | 3 | Sysmon 13 write to BITS Start |
 | 100522 | 12 | BITS Start set to Disabled |
-| 100523 | 7 | Explicit `sc.exe config BITS` execution |
-| 100524 | 6 | `bitsadmin.exe` execution; dual-use hunting pivot |
+| 100523 | 7 | Explicit sc.exe config BITS execution |
+| 100524 | 6 | bitsadmin.exe execution; dual-use hunting pivot |
 
-**Validation status:** XML is well-formed and synthetic JSONL fixtures parse. Runtime testing against the Wazuh 4.13.1 manager and actual decoded EventChannel records remains outstanding. Verify parent IDs and decoded fields before deployment; run `wazuh-analysisd -t` and `wazuh-logtest`.
+**Validation status:** XML is well-formed and synthetic JSONL fixtures parse. Runtime testing against the Wazuh 4.13.1 manager and actual decoded EventChannel records remains outstanding. Verify parent IDs and decoded fields before deployment; run wazuh-analysisd -t and wazuh-logtest.
 
 ## Evidence handling
 The public write-up generalizes the local profile name. Raw endpoint data can contain usernames, paths, command lines, job identifiers and URLs; sanitize before sharing.

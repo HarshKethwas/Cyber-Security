@@ -2,7 +2,7 @@
 
 This directory tracks custom detections for the AI-Powered SOC Lab, built around Windows Sysmon process-creation telemetry.
 
-> **Status:** Initial telemetry confirmed; first custom rules drafted, not yet deployed  
+> **Status:** D001 live positive validation passed; live negative validation pending; D002–D005 not yet validated  
 > **Data source:** Windows Sysmon — Event ID 1 (Process Create)  
 > **Custom rule IDs:** 100500–100510  
 > **Rule file:** [soc_windows_baseline.xml](./wazuh/rules/soc_windows_baseline.xml)
@@ -11,7 +11,7 @@ This directory tracks custom detections for the AI-Powered SOC Lab, built around
 
 | Detection ID | Name | Custom rule ID | ATT&CK mapping | Status |
 |---|---|---:|---|---|
-| D001 | Suspicious PowerShell execution | 100500 | T1059.001 | Drafted; testing pending |
+| D001 | Suspicious PowerShell execution | 100500 | T1059.001 | Live positive passed; live negative pending |
 | D002 | Encoded PowerShell from non-PowerShell parent | 100501 | T1059.001, T1027 | Drafted; testing pending |
 | D003 | `whoami.exe /all` identity discovery | 100510 | T1033 | Drafted; testing pending |
 | D004 | Suspicious LOLBin usage | 100520 | To be implemented | Planned |
@@ -68,7 +68,7 @@ The tuning is **draft only**. It retains a low-priority alert rather than silent
 
 The Dashboard Ruleset Test was supplied with compact, single-line synthetic JSON Sysmon Event ID 1 records. The positive event decoded the expected fields and matched custom rule **100500**, level **8**, mapped to T1059.001 (Execution). A negative event representing ordinary PowerShell execution decoded successfully but produced no Phase 3 rule match.
 
-Both **synthetic positive and negative tests passed**. Wazuh requires a manager restart after saving rule changes before those changes take effect for live alert generation. Live Windows-to-Wazuh positive and negative validation remain pending. See the [D001 test evidence](../evidence/2026-11-23-d001-ruleset-test.md).
+Both **synthetic positive and negative tests passed**. In addition, on 2026-11-26 a harmless live PowerShell test using `-ExecutionPolicy Bypass` was recorded by Sysmon Event ID 1, ingested through the Windows EventChannel decoder, and indexed by Wazuh as custom rule **100500**, level **8**, mapped to T1059.001. The live positive test therefore passed. The live negative test remains pending. See the [synthetic test record](../evidence/2026-11-23-d001-ruleset-test.md) and [live alert evidence](../evidence/2026-11-26-d001-live-alert.md).
 
 ## Rule implementation
 
@@ -82,7 +82,7 @@ It contains three draft rules:
 - **100501 / D002:** Encoded PowerShell launched by a parent other than PowerShell or PowerShell 7. This complements the observed existing rule 92057.
 - **100510 / D003:** `whoami.exe /all` identity and privilege discovery.
 
-The file is a draft. These rules have **not yet been deployed, parsed by this Wazuh manager, or positively and negatively validated**. Do not treat them as active protections until the steps below pass.
+The rule file is deployed in the lab manager. D001 (100500) has passed a live positive test. Its live negative test is still pending. D002 (100501) and D003 (100510) remain unvalidated drafts; D004 and D005 remain planned. Do not treat unvalidated rules as active protections.
 
 ## Detection hypotheses and tuning
 
@@ -179,9 +179,11 @@ This was already observed locally in Sysmon. Repeat it after deployment to confi
 
 | Test | Expected result | Actual result |
 |---|---|---|
+| Custom D001 live positive test | Rule 100500 appears in `wazuh-alerts-*` from Sysmon EventChannel | Pass — 2026-11-26 |
+| Custom D001 live negative test | Ordinary PowerShell does not trigger 100500 | Pending |
 | Existing D002 encoded PowerShell test | Existing rule 92057 triggers when PowerShell is the parent | Confirmed: rule 92057, level 12 |
-| Custom D001 positive test | Rule 100500 triggers | Pending |
-| Custom D001 benign test | No alert from rule 100500 | Pending |
+| Custom D001 positive synthetic test | Rule 100500 triggers | Pass |
+| Custom D001 benign synthetic test | No alert from rule 100500 | Pass |
 | Custom D002 with cmd.exe parent | Rule 100501 triggers | Pending |
 | Custom D003 `whoami.exe /all` | Rule 100510 triggers | Pending |
 

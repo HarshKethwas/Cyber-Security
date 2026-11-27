@@ -115,3 +115,10 @@ The diagram represents logical flow. Add the actual Docker Compose configuration
 ---
 
 *This is an evolving educational and defensive-security lab, not a production-ready SOC platform.*
+
+
+### BITS service lifecycle case study
+
+A documented Windows investigation examined repeated BITS startup-type transitions, corrected a Sysmon filtering gap affecting Event ID 13 visibility, and developed candidate Wazuh detections. The evidence supported expected BITS lifecycle behaviour; compromise was not substantiated. The custom rules and collector remain subject to lab runtime validation.
+
+[**Open the BITS case study →**](./investigations/bits-service-lifecycle/README.md)

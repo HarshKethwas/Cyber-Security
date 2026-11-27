@@ -1,0 +1,16 @@
+timestamp_local,source,event_id,service,previous_state,new_state,context,attribution
+2026-11-24 00:31:44,System,7040,BITS,Demand Start,Automatic,Before Sysmon telemetry fix,Unknown
+2026-11-24 00:33:55,System,7040,BITS,Automatic,Demand Start,Before Sysmon telemetry fix,Unknown
+2026-11-24 01:02:17,System,7040,BITS,Demand Start,Automatic,Before Sysmon telemetry fix,Unknown
+2026-11-24 01:04:22,System,7040,BITS,Automatic,Demand Start,Before Sysmon telemetry fix,Unknown
+2026-11-24 01:17:56,System,7040,BITS,Demand Start,Automatic,Initial Wazuh alert,Unknown
+2026-11-24 01:20:34,System,7040,BITS,Automatic,Demand Start,Before Sysmon telemetry fix,Unknown
+2026-11-24 23:08:15,System,7040,BITS,Demand Start,Automatic,Before Sysmon telemetry fix,Unknown
+2026-11-24 23:10:27,System,7040,BITS,Automatic,Demand Start,Before Sysmon telemetry fix,Unknown
+2026-11-24 23:17:54,System,7040,BITS,Demand Start,Automatic,Before Sysmon telemetry fix,Unknown
+2026-11-24 23:18:19,System,7040,BITS,Automatic,Demand Start,Before Sysmon telemetry fix,Unknown
+2026-11-24 23:29:25,System+Sysmon,7040+1+13,BITS,Demand Start,Automatic,Controlled test,sc.exe via PowerShell; services.exe wrote registry
+2026-11-24 23:29:28,System+Sysmon,7040+1+13,BITS,Automatic,Demand Start,Controlled restoration,sc.exe via PowerShell; services.exe wrote registry
+2026-11-24 23:58:07,System,7040,BITS,Demand Start,Automatic,OneDrive Reporting Task ran at same timestamp; causation unproven,Unknown
+2026-11-25 00:00:13,System,7040,BITS,Automatic,Demand Start,Observed reversal,Unknown
+2026-11-25 00:09:49,System+Sysmon,7040+13,BITS,Demand Start,Automatic,csc.exe launched at 00:09:48; same PowerShell session ran Get-BitsTransfer; causation unproven,Unknown

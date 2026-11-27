@@ -1,7 +1,7 @@
 <group name="local,windows,bits,">
   <!--
     BITS service lifecycle and misuse monitoring.
-    Parent rules to validate against the installed Wazuh 4.13.1 ruleset:
+    Parent rules to validate against installed Wazuh 4.13.1:
       61104 = Windows System Event ID 7040
       61615 = Sysmon Event ID 13
       sysmon_event1 = Sysmon Event ID 1 process creation group
@@ -16,7 +16,7 @@
 
   <rule id="100521" level="3">
     <if_sid>61615</if_sid>
-    <field name="win.eventdata.targetObject" type="pcre2">(?i)\CurrentControlSet\Services\BITS\Start$</field>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)^HKLM\\(SYSTEM\\)?(CurrentControlSet|ControlSet[0-9]{3,})\\Services\\BITS\\Start$</field>
     <description>BITS Start registry value changed by $(win.eventdata.image): $(win.eventdata.details)</description>
     <group>bits,bits_registry_change,windows,</group>
   </rule>
@@ -39,7 +39,7 @@
 
   <rule id="100524" level="6">
     <if_group>sysmon_event1</if_group>
-    <field name="win.eventdata.image" type="pcre2">(?i)\bitsadmin\.exe$</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)(^|\\)bitsadmin\.exe$</field>
     <description>bitsadmin.exe executed by $(win.eventdata.user): $(win.eventdata.commandLine). Inspect job owner, URL, files, and state.</description>
     <mitre><id>T1197</id></mitre>
     <group>bits,bits_job_tool_execution,windows,</group>

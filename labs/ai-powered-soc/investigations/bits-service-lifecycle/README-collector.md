@@ -1,6 +1,6 @@
 # Read-only BITS evidence collector
 
-The PowerShell collector is provided in the companion downloadable case package. It reads event logs and the current BITS service/registry state only.
+The PowerShell collector is included in this repository at [powershell/Collect-BITSInvestigation.ps1](./powershell/Collect-BITSInvestigation.ps1). It reads event logs and the current BITS service/registry state only.
 
 ## Usage
 
